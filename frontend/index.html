@@ -1,0 +1,184 @@
+i<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distri-Buzz Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+        button { background-color: #3498db; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-right: 10px; }
+        button:hover { background-color: #2980b9; }
+        input[type="text"], input[type="password"], textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .service-section { margin-bottom: 30px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 6px; background-color: #fdfdfd; }
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #ecf0f1; margin-bottom: 8px; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        li button { margin-left: 10px; padding: 5px 10px; font-size: 14px; }
+        .response-box { background-color: #e8f6f8; border: 1px dashed #3498db; padding: 10px; margin-top: 15px; font-family: monospace; white-space: pre-wrap; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Distri-Buzz: Distributed Event Notification System</h1>
+        <p>This frontend demonstrates interaction with various backend microservices orchestrated by Docker Compose.</p>
+
+        <div class="service-section">
+            <h2>User Service</h2>
+            <h3>Register User</h3>
+            <input type="text" id="reg-username" placeholder="Username">
+            <input type="password" id="reg-password" placeholder="Password">
+            <button onclick="registerUser()">Register</button>
+            <div id="register-response" class="response-box"></div>
+
+            <h3>All Users</h3>
+            <button onclick="getUsers()">Fetch All Users</button>
+            <ul id="user-list"></ul>
+            <div id="users-response" class="response-box"></div>
+        </div>
+
+        <div class="service-section">
+            <h2>Event Service</h2>
+            <h3>Create Event</h3>
+            <input type="text" id="event-name" placeholder="Event Name">
+            <textarea id="event-description" placeholder="Description"></textarea>
+            <input type="datetime-local" id="event-date">
+            <button onclick="createEvent()">Create Event</button>
+            <div id="create-event-response" class="response-box"></div>
+
+            <h3>All Events</h3>
+            <button onclick="getEvents()">Fetch All Events</button>
+            <ul id="event-list"></ul>
+            <div id="events-response" class="response-box"></div>
+        </div>
+
+        <div class="service-section">
+            <h2>Notifier Service Health</h2>
+            <p>The Notifier Service processes events asynchronously via RabbitMQ.</p>
+            <button onclick="checkNotifierHealth()">Check Notifier Health</button>
+            <div id="notifier-health-response" class="response-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_API_URL = '/api'; // Nginx will proxy this
+
+        // --- Utility Functions ---
+        function displayResponse(elementId, data) {
+            const el = document.getElementById(elementId);
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function displayList(elementId, items, displayKey, idKey) {
+            const ul = document.getElementById(elementId);
+            ul.innerHTML = '';
+            if (items.length === 0) {
+                ul.innerHTML = '<li>No items available.</li>';
+                return;
+            }
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>ID: ${item[idKey]}</strong> - ${item[displayKey]}`;
+                ul.appendChild(li);
+            });
+        }
+
+        // --- User Service Interactions ---
+        async function registerUser() {
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            const responseBox = 'register-response';
+
+            try {
+                const response = await fetch(`${BASE_API_URL}/users/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                displayResponse(responseBox, data);
+            } catch (error) {
+                console.error('Error registering user:', error);
+                displayResponse(responseBox, { error: 'Failed to register user.' });
+            }
+        }
+
+        async function getUsers() {
+            const responseBox = 'users-response';
+            try {
+                const response = await fetch(`${BASE_API_URL}/users`);
+                const data = await response.json();
+                displayResponse(responseBox, data); // Show raw JSON
+                displayList('user-list', data, 'username', 'id'); // Show formatted list
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                displayResponse(responseBox, { error: 'Failed to fetch users.' });
+            }
+        }
+
+        // --- Event Service Interactions ---
+        async function createEvent() {
+            const name = document.getElementById('event-name').value;
+            const description = document.getElementById('event-description').value;
+            const eventDate = document.getElementById('event-date').value; // YYYY-MM-DDTHH:MM format
+            const responseBox = 'create-event-response';
+
+            if (!name || !eventDate) {
+                displayResponse(responseBox, { error: 'Event name and date are required.' });
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_API_URL}/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, event_date: eventDate })
+                });
+                const data = await response.json();
+                displayResponse(responseBox, data);
+                if (response.ok) {
+                    document.getElementById('event-name').value = '';
+                    document.getElementById('event-description').value = '';
+                    document.getElementById('event-date').value = '';
+                    getEvents(); // Refresh list after creating
+                }
+            } catch (error) {
+                console.error('Error creating event:', error);
+                displayResponse(responseBox, { error: 'Failed to create event.' });
+            }
+        }
+
+        async function getEvents() {
+            const responseBox = 'events-response';
+            try {
+                const response = await fetch(`${BASE_API_URL}/events`);
+                const data = await response.json();
+                displayResponse(responseBox, data);
+                displayList('event-list', data, 'name', 'id');
+            } catch (error) {
+                console.error('Error fetching events:', error);
+                displayResponse(responseBox, { error: 'Failed to fetch events.' });
+            }
+        }
+
+        // --- Notifier Service Interactions ---
+        async function checkNotifierHealth() {
+            const responseBox = 'notifier-health-response';
+            try {
+                const response = await fetch(`${BASE_API_URL}/notifier/health`);
+                const data = await response.json();
+                displayResponse(responseBox, data);
+            } catch (error) {
+                console.error('Error checking notifier health:', error);
+                displayResponse(responseBox, { error: 'Failed to connect to Notifier Service.' });
+            }
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            getUsers();
+            getEvents();
+        });
+    </script>
+</body>
+</html>

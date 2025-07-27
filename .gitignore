@@ -1,0 +1,22 @@
+# Environment variables (contains secrets)
+.env
+**/.env
+
+# Python specific ignores
+__pycache__/
+*.pyc
+*.o
+*.pyd
+*.so
+venv/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+# Docker specific ignores
+# Docker Compose will create volumes, don't commit their contents
+*.swp # Vim swap files
+*.swo
+
+# IDE-specific files (e.g., VS Code)
+.vscode/
