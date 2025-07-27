@@ -37,13 +37,13 @@ Follow these steps to set up and run Distri-Buzz locally:
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/distri-buzz.git](https://github.com/your-username/distri-buzz.git) # Replace with your actual repo
+    git clone https://github.com/guptasajal244/distri-buzz-devops-project.git
     cd distri-buzz
     ```
 2.  **Create your `.env` file:**
     Copy the `.env` content provided in this README to your project's `.env` file.
     ```bash
-    cp .env.example .env # (If you provide .env.example in your repo)
+    cp .env.example .env 
     ```
 3.  **Build and Run with Docker Compose:**
     ```bash
