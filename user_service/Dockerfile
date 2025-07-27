@@ -11,6 +11,8 @@ FROM python:3.9-slim-buster
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/
+COPY . .
 
 EXPOSE 5002
 
